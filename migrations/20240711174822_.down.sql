@@ -1,0 +1,6 @@
+BEGIN TRANSACTION;
+
+ALTER TABLE wallet_address_nfts
+    DROP COLUMN name;
+
+COMMIT;

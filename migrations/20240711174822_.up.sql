@@ -1,0 +1,6 @@
+BEGIN TRANSACTION;
+
+ALTER TABLE wallet_address_nfts
+    ADD COLUMN name VARCHAR(255) DEFAULT '';
+
+COMMIT;

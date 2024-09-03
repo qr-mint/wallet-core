@@ -1,0 +1,5 @@
+BEGIN TRANSACTION;
+
+DROP TABLE wallet_address_nfts;
+
+COMMIT;

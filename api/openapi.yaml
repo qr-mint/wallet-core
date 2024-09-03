@@ -1,0 +1,1452 @@
+openapi: 3.0.1
+info:
+  title: Nexus Wallet API
+  description: Internal nexus wallet API
+  version: 1.0.0
+tags:
+  - name: Address
+    description: Адреса кошелька
+  - name: Auth
+    description: Авторизация
+  - name: Deposit
+    description: Пополнение
+  - name: Estimate
+    description: Оценочная стоимость монеты
+  - name: Mnemonic
+    description: Мнемоник
+  - name: Profile
+    description: Профиль
+  - name: Transfer
+    description: Перевод средств
+  - name: Exchange
+    description: Обмен средств
+  - name: Transactions
+    description: Список транзакций
+  - name: NFT
+    description: NFT
+
+paths:
+  /api/v1/addresses/import:
+    post:
+      tags:
+        - Address
+      summary: Импорт адресов
+      operationId: importAddresses
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Запрос для импорта адресов
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportRequest'
+      responses:
+        '200':
+          description: Успешный импорт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+
+  /api/v1/addresses/info:
+    get:
+      tags:
+        - Address
+      summary: Получение информации об адресах
+      operationId: getAddressInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Currency-Code
+          required: true
+          schema:
+            type: string
+          description: Код валюты
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Успешное получение информации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoResponse'
+  /api/v1/addresses/coins:
+    get:
+      tags:
+        - Address
+      summary: Получение информации о монетах
+      operationId: getCoinsInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: only_visible
+          schema:
+            type: boolean
+          description: Параметр для фильтрации монет по видимости
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Успешное получение информации
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ListCoinsResponse'
+  /api/v1/addresses/coins/{id}:
+    get:
+      tags:
+        - Address
+      summary: Получение информации о монете по её идентификатору
+      operationId: getCoinById
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор монеты
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Успешное получение информации о монете
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoinResponse'
+  /api/v1/addresses/coins/{id}/switch:
+    post:
+      tags:
+        - Address
+      summary: Переключение видимости монеты по её идентификатору
+      operationId: switchCoinState
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор монеты
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Успешное переключение состояния монеты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Обновление токена доступа
+      operationId: refreshAuthToken
+      responses:
+        '200':
+          description: Успешное обновление токена доступа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+      parameters:
+        - in: header
+          name: Refresh-Token
+          required: true
+          schema:
+            type: string
+          description: Токен обновления
+  /api/v1/auth/telegram:
+    post:
+      tags:
+        - Auth
+      summary: Авторизация через Telegram
+      operationId: telegramAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telegram_query:
+                  type: string
+                  description: Запрос Telegram
+      responses:
+        '200':
+          description: Успешная авторизация через Telegram
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/v1/deposit/{providerName}/redirect:
+    get:
+      tags:
+        - Deposit
+      summary: Получение ссылки для перенаправления для провайдера депозита
+      operationId: getDepositRedirectLink
+      parameters:
+        - in: path
+          name: providerName
+          required: true
+          schema:
+            type: string
+          description: Название провайдера (simple_swap или finch_pay)
+        - in: query
+          name: Currency-Code
+          required: true
+          schema:
+            type: string
+          description: Код валюты
+        - in: query
+          name: amount
+          required: true
+          schema:
+            type: integer
+          description: Сумма (целое число)
+        - in: query
+          name: address_coin_id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор монеты адреса
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоники
+      responses:
+        '200':
+          description: Успешное получение ссылки для перенаправления
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedirectResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/deposit/{providerName}/limits:
+    get:
+      tags:
+        - Deposit
+      summary: Получение лимитов для провайдера депозита
+      operationId: getDepositRedirectLink
+      parameters:
+        - in: path
+          name: providerName
+          required: true
+          schema:
+            type: string
+          description: Название провайдера (simple_swap или finch_pay)
+        - in: query
+          name: Currency-Code
+          required: true
+          schema:
+            type: string
+          description: Код валюты
+        - in: query
+          name: address_coin_id
+          required: true
+          schema:
+            type: integer
+          description: Идентификатор монеты адреса
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLimitsResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/estimate/crypto-in-fiat:
+    get:
+      tags:
+        - Estimate
+      summary: Получение оценки цены криптовалюты в фиатной валюте
+      operationId: getPriceEstimation
+      parameters:
+        - in: header
+          name: Currency-Code
+          schema:
+            type: string
+          description: Код валюты
+        - in: query
+          name: coin_name
+          schema:
+            type: string
+          description: Название монеты
+        - in: query
+          name: network
+          schema:
+            type: string
+          description: Сеть
+        - in: query
+          name: crypto_amount
+          schema:
+            type: number
+          description: Кол-во токенов
+      responses:
+        '200':
+          description: Успешное получение оценки цены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPriceEstimationResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/estimate/fiat-in-crypto:
+    get:
+      tags:
+        - Estimate
+      summary: Получение оценки цены фиатной валюты в криптовалюте
+      operationId: getPriceEstimation
+      parameters:
+        - in: header
+          name: Currency-Code
+          schema:
+            type: string
+          description: Код валюты
+        - in: query
+          name: coin_name
+          schema:
+            type: string
+          description: Название монеты
+        - in: query
+          name: network
+          schema:
+            type: string
+          description: Сеть
+        - in: query
+          name: fiat_amount
+          schema:
+            type: number
+          description: Кол-во токенов
+      responses:
+        '200':
+          description: Успешное получение оценки цены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPriceEstimationResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/mnemonic/validate:
+    post:
+      tags:
+        - Mnemonic
+      summary: Проверка корректности мнемонической фразы
+      operationId: validateMnemonic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateHashRequest'
+      responses:
+        '200':
+          description: Успешная проверка корректности мнемонической фразы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateHashResponse'
+  /api/v1/mnemonic/generate:
+    post:
+      tags:
+        - Mnemonic
+      summary: Генерация мнемонической фразы
+      operationId: generateMnemonic
+      responses:
+        '200':
+          description: Успешная генерация мнемонической фразы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+  /api/v1/mnemonic/names:
+    get:
+      tags:
+        - Mnemonic
+      summary: Получение списка имен для мнемонических фраз
+      operationId: getMnemonicNames
+      responses:
+        '200':
+          description: Успешное получение списка имен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNamesResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/mnemonic/name:
+    put:
+      tags:
+        - Mnemonic
+      summary: Обновление имени мнемонической фразы
+      operationId: updateMnemonicName
+      parameters:
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNameRequest'
+      responses:
+        '200':
+          description: Успешное обновление имени мнемонической фразы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/profile:
+    get:
+      tags:
+        - Profile
+      summary: Получение профиля пользователя
+      operationId: getProfile
+      responses:
+        '200':
+          description: Успешное получение профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProfileTelegramResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/transfer/message:
+    get:
+      tags:
+        - Transfer
+      summary: Получение сообщения для перевода
+      operationId: getTransferMessage
+      parameters:
+        - in: query
+          name: coin_name
+          required: true
+          schema:
+            type: string
+          description: Название монеты
+        - in: query
+          name: network
+          required: true
+          schema:
+            type: string
+          description: Сеть
+        - in: query
+          name: address_to
+          required: true
+          schema:
+            type: string
+          description: Адрес получателя
+        - in: query
+          name: amount
+          required: true
+          schema:
+            type: number
+            format: float
+          description: Сумма для перевода
+        - in: query
+          name: version
+          schema:
+            type: integer
+          description: Версия (если есть)
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемонической фразы
+      responses:
+        '200':
+          description: Успешное получение сообщения для перевода
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GetTonMessageResponse'
+                  - $ref: '#/components/schemas/GetTrc20MessageResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/transfer:
+    post:
+      tags:
+        - Transfer
+      summary: Отправка перевода
+      operationId: postTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/TransferTonRequest'
+                - $ref: '#/components/schemas/TransferTrc20Request'
+      responses:
+        '200':
+          description: Успешная отправка перевода
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/exchange/amount:
+    get:
+      tags:
+        - Exchange
+      summary: Получить итоговое кол-во монеты после обмена
+      parameters:
+        - in: query
+          name: send_amount
+          schema:
+            type: number
+            format: float
+            example: 5
+          required: true
+          description: Количество отправляемой валюты.
+        - in: query
+          name: address_coin_id_from
+          schema:
+            type: integer
+            example: 7
+          required: true
+          description: ID отправляемой валюты.
+        - in: query
+          name: address_coin_id_to
+          schema:
+            type: integer
+            example: 8
+          required: true
+          description: ID получаемой валюты.
+      responses:
+        '200':
+          description: Успешный ответ с количеством получаемой валюты.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeAmountResponse'
+      security:
+        - bearerAuth: [ ]
+  /api/v1/exchange/address:
+    get:
+      tags:
+        - Exchange
+      summary: Получить адрес для перевода
+      description: Возвращает адрес для перевода средств.
+      parameters:
+        - in: query
+          name: amount
+          schema:
+            type: number
+            format: float
+            example: 1.23
+          required: true
+          description: Количество отправляемой валюты.
+        - in: query
+          name: address_coin_id_from
+          schema:
+            type: integer
+            example: 7
+          required: true
+          description: ID отправляемой валюты.
+        - in: query
+          name: address_coin_id_to
+          schema:
+            type: integer
+            example: 8
+          required: true
+          description: ID получаемой валюты.
+      responses:
+        '200':
+          description: Успешный ответ с адресом для перевода.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAddressForTransferResponse'
+      security:
+        - bearerAuth: [ ]
+  /api/v1/exchange/limits:
+    get:
+      tags:
+        - Exchange
+      summary: Получить лимиты для обмена
+      description: Возвращает минимальные и максимальные лимиты для обмена.
+      parameters:
+        - in: query
+          name: address_coin_id_from
+          schema:
+            type: integer
+            example: 7
+          required: true
+          description: ID отправляемой валюты.
+        - in: query
+          name: address_coin_id_to
+          schema:
+            type: integer
+            example: 8
+          required: true
+          description: ID получаемой валюты.
+      responses:
+        '200':
+          description: Успешный ответ с лимитами.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetExchangeLimitsResponse'
+      security:
+        - bearerAuth: [ ]
+  /api/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get transactions
+      security:
+        - bearerAuth: []
+      description: Получить список транзакций
+      parameters:
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+        - name: offset
+          in: query
+          description: Offset для пагинации
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit для пагинации
+          required: true
+          schema:
+            type: integer
+        - name: address_coin_id
+          in: query
+          description: ID монеты адреса
+          schema:
+            type: integer
+            nullable: true
+        - name: only_out
+          in: query
+          description: Фильтровать только исходящие транзакции
+          schema:
+            example: "true"
+            type: boolean
+            nullable: true
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+  /api/v1/nft/:
+    get:
+      tags:
+        - NFT
+      summary: Get a list of NFT
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: offset
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: The number of items to skip before starting to collect the result set
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: The number of items to return
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: A list of NFTs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NftListResponse'
+  /api/v1/nft/{id}:
+    get:
+      tags:
+        - NFT
+      security:
+        - bearerAuth: [ ]
+      summary: Get NFT by ID
+      operationId: getNftById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the NFT
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      responses:
+        '200':
+          description: Successfully retrieved NFT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    nullable: true
+                  data:
+                    $ref: '#/components/schemas/NftListResponseItem'
+  /api/v1/nft/message:
+    get:
+      tags:
+        - NFT
+      summary: Get a built NFT message
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+        - name: network
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The network of the NFT
+        - name: address_to
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The destination address
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: The version of the message
+        - name: nft_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: The ID of the NFT
+        - name: public_key
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The public key
+      responses:
+        '200':
+          description: A built NFT message
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/GetNftTonMessageResponse'
+  /api/v1/nft/send:
+    post:
+      tags:
+        - NFT
+      summary: Send a signed NFT message
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: header
+          name: Mnemonic-Hash
+          required: true
+          schema:
+            type: string
+          description: Хэш мнемоника
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendNftTonMessageRequest'
+      responses:
+        '200':
+          description: NFT message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendNftResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SendNftTonMessageRequest:
+      type: object
+      properties:
+        network:
+          type: string
+          description: The network of the NFT
+        message:
+          type: object
+          properties:
+            destination_address:
+              type: string
+              description: The destination address
+            state_init:
+              type: object
+              description: The state initialization
+            body:
+              type: object
+              description: The body of the message
+            signature:
+              type: string
+              description: The signature of the message
+    SendNftResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            hash:
+              type: string
+              description: The hash of the sent message
+    GetNftTonMessageResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            destination_address:
+              type: string
+              description: The destination address
+            state_init:
+              type: object
+              description: The state initialization
+            body:
+              type: object
+              description: The body of the message
+    NftListResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/NftListResponseItem'
+    NftListResponseItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of the NFT
+        address:
+          type: string
+          description: The address of the NFT
+        name:
+          type: string
+          description: The name of the NFT
+        price:
+          type: integer
+          description: The price of the NFT
+        token_symbol:
+          type: string
+          description: The symbol of the token
+        index:
+          type: integer
+          description: The index of the NFT
+        network:
+          type: string
+          description: The network of the NFT
+        collection_address:
+          type: string
+          description: The address of the collection
+        collection_name:
+          type: string
+          description: The name of the collection
+        collection_description:
+          type: string
+          description: The description of the collection
+        preview_urls:
+          type: array
+          items:
+            properties:
+              url:
+                type: string
+              resolution:
+                type: string
+            description: The preview URLs of the NFT
+    GetLimitsResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            min:
+              type: string
+              example: "10.00"
+            max:
+              type: string
+              example: "1000.00"
+    ListResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ListResponseItem'
+    ListResponseItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        hash:
+          type: string
+        amount:
+          type: string
+        network:
+          type: string
+          enum:
+            - trc20
+            - ton
+        coin_name:
+          type: string
+          enum:
+            - ton
+            - tether
+            - tron
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - failed
+        type:
+          type: string
+          enum:
+            - incoming
+            - outgoing
+        address_from:
+          type: string
+        address_to:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        explorer_link:
+          type: string
+    TransferTonRequest:
+      type: object
+      properties:
+        coin_name:
+          type: string
+          description: Название монеты
+        network:
+          type: string
+          description: Сеть
+        message:
+          type: object
+          properties:
+            destination_address:
+              type: string
+              description: Адрес назначения
+            state_init:
+              type: object
+              description: StateInit объект
+            body:
+              type: object
+              description: Body объект
+            signature:
+              type: string
+              description: Подпись
+    TransferTrc20Request:
+      type: object
+      properties:
+        coin_name:
+          type: string
+          description: Название монеты
+        network:
+          type: string
+          description: Сеть
+        message:
+          type: object
+          properties:
+            raw_data:
+              type: object
+              description: Сырые данные транзакции (core.TransactionRaw)
+            ret:
+              type: array
+              items:
+                type: object
+                description: Результат транзакции (core.Transaction_Result)
+            signature:
+              type: string
+              description: Подпись
+    TransferResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            hash:
+              type: string
+              description: Хэш транзакции
+    GetTonMessageResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            destination_address:
+              type: string
+              description: Адрес назначения
+            state_init:
+              type: object
+              description: StateInit объект (tlb.StateInit)
+            body:
+              type: object
+              description: Body объект (cell.Cell)
+    GetTrc20MessageResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            raw_data:
+              type: object
+              description: Сырые данные транзакции (core.TransactionRaw)
+            ret:
+              type: array
+              items:
+                type: object
+                description: Результат транзакции (core.Transaction_Result)
+            hash:
+              type: string
+              description: Хэш транзакции
+    GetProfileTelegramResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            first_name:
+              type: string
+              description: Имя пользователя
+            last_name:
+              type: string
+              description: Фамилия пользователя
+            username:
+              type: string
+              description: Имя пользователя (username)
+            language:
+              type: string
+              description: Язык пользователя
+            image_source:
+              type: string
+              description: Источник изображения профиля
+    UpdateNameRequest:
+      type: object
+      properties:
+        value:
+          type: string
+          description: Новое имя для мнемонической фразы
+    GetNamesResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/GetNamesResponseItem'
+    GetNamesResponseItem:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            value:
+              type: string
+              description: Имя для мнемонической фразы
+    ValidateHashRequest:
+      type: object
+      properties:
+        value:
+          type: string
+          description: Мнемоническая фраза для проверки
+    ValidateHashResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            is_valid:
+              type: boolean
+              description: Флаг корректности мнемонической фразы
+    CoinResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Уникальный идентификатор
+            coin_id:
+              type: integer
+              description: Идентификатор монеты
+            network:
+              type: string
+              description: Сеть
+            name:
+              type: string
+              description: Название монеты
+            symbol:
+              type: string
+              description: Символ монеты
+            caption:
+              type: string
+              description: Подпись
+            image_source:
+              type: string
+              description: Источник изображения
+            amount:
+              type: string
+              description: Сумма
+            address:
+              type: string
+              description: Адрес монеты
+            explorer_link:
+              type: string
+              description: Ссылка на эксплорер
+    GetPriceEstimationResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            payable_amount:
+              type: number
+              description: Оплачиваемая сумма
+            requested_amount:
+              type: integer
+              description: Запрошенная сумма
+            estimated_timestamp:
+              type: integer
+              description: Время
+    ListCoinsResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ListCoinsResponseItem'
+    ListCoinsResponseItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор монеты адреса
+        coin_id:
+          type: integer
+          description: Идентификатор монеты
+        network:
+          type: string
+          description: Сеть
+        name:
+          type: string
+          description: Название монеты
+        symbol:
+          type: string
+          description: Символ монеты
+        caption:
+          type: string
+          description: Подпись
+        image_source:
+          type: string
+          description: Источник изображения
+        amount:
+          type: string
+          description: Сумма
+        is_visible:
+          type: boolean
+          description: Флаг видимости монеты
+        address:
+          type: string
+          description: Адрес кошелька токена
+    ImportRequest:
+      type: object
+      properties:
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              network:
+                type: string
+                description: Сеть адреса
+              address:
+                type: string
+                description: Адрес
+        name:
+          type: string
+          description: Имя
+        mnemonic_hash:
+          type: string
+          description: Хэш мнемоники
+      required:
+        - addresses
+        - name
+        - mnemonic_hash
+    AuthResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+              description: Токен доступа
+            refresh_token:
+              type: string
+              description: Токен обновления
+    RedirectResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            redirect_url:
+              type: string
+              description: Ссылка для перенаправления
+    GenerateResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            value:
+              type: string
+              description: Сгенерированная мнемоническая фраза
+    EmptyResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          nullable: true
+    ExchangeAmountResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            receive_amount:
+              type: string
+              example: "37.2334"
+    GetAddressForTransferResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            pay_in_address:
+              type: string
+              example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+            id:
+              type: string
+              example: "cgd97r5x6madwo8dkr"
+    GetExchangeLimitsResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            min:
+              type: string
+              example: "0.01"
+            max:
+              type: string
+              example: "1000.00"
+    InfoResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            daily_price_delta_percent:
+              type: string
+              description: Процент роста цены за день
+            fiat_amount:
+              type: string
+              description: Сумма в фиатной валюте
+            fiat_currency:
+              type: string
+              description: Код фиатной валюты
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Уникальный идентификатор монеты адреса
+                  fiat_amount:
+                    type: string
+                    description: Сумма в фиатной валюте
+                  daily_price_delta_percent:
+                    type: string
+                    description: Процент роста цены за день
+                  fiat_currency:
+                    type: string
+                    description: Код фиатной валюты
+                  amount:
+                    type: string
+                    description: Сумма
+                  symbol:
+                    type: string
+                    description: Символ
+                  image_source:
+                    type: string
+                    description: Источник изображения
+                  network:
+                    type: string
+                    description: Сеть
+                  name:
+                    type: string
+                    description: Название монеты
+            name:
+              type: string
+              description: Имя

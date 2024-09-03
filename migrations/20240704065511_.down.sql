@@ -1,0 +1,5 @@
+BEGIN TRANSACTION;
+
+DROP TABLE exchanges;
+
+COMMIT;
